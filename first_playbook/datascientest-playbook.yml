@@ -1,0 +1,49 @@
+- name: Installe apache , copie des fichiers sur le serveur du groupe serveurweb # nom du premier jeu
+  hosts: serveurweb # groupes ou hôtes cibles sur lesquels on fera des déploiements
+  become: yes # permet la mise en place des actions d'élévation de privilèges
+  tasks:
+    - name: installation apache2 avec elevations de privileges # nom de la tâche
+      apt: # appel du module apt
+        name: apache2
+        state: present
+      tags:
+        - web # ajout du tag web
+
+    - name: démarrage du service apache2 grâce au module service # nom de la tâche
+      service: # appel du module service
+        name: apache2 # nous voulons demarrer le service Apache
+        state: started # état dans lequel nous voulons le service
+        enabled: yes # nous voulons également que le service soit lancé au démarrage du serveur
+      tags:
+        - web # ajout du tag web
+        - always # ajout du tag always
+
+    - name: Installe apache, copie des fichiers avec elevations de privileges # nom de la tâche
+      copy: # appel du module copy
+        src: index.html # fichier à copier depuis le serveur ansible
+        dest: /var/www/html # répertoire dans lequel sera copié le fichier index.php sur les cibles
+        mode: "0644"
+      tags:
+        - web # ajout du tag web
+        - always # ajout du tag always
+
+
+- name: installation de postgresql et activation du service # nom du second play
+  hosts: serveurdatabase # groupes ou hôtes cibles sur lesquels on fera des déploiements
+  become: yes # permet la mise en place des actions d'élévation de privilèges
+  tasks:
+    - name: Installation de postgresql à la derniere version # nom de la tâche
+      apt: # appel du module apt
+        name: postgresql # nous voulons installer postgresql grâce au module apt
+        state: latest # nous voulons postgresql en dernière version
+      tags:
+        - bd # ajout du tag db
+
+    - name: démarrage du service potgresql grâce au module service # nom de la tâche
+      service: # appel du module service
+        name: postgresql # nous voulons demarrer le service postgresql
+        state: started # état dans lequel nous voulons le service
+        enabled: yes # nous voulons également que le service soit lancé au démarrage du serveur
+      tags:
+        - bd # ajout du tag db
+        - never # Ajout du tag never
