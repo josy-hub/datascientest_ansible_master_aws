@@ -1,0 +1,65 @@
+- name: Installation de wordpress
+  hosts: production
+  become: true
+  vars:
+    wp_webserver: nginx
+    wp_mysql_db: "datascientest"
+    wp_db_user: "datascientest"
+    wp_mysql_user: "datascientest"
+    wp_mysql_password: "mysql_pass"
+    wp_admin_email: "admin@datascientest.fr"
+    wp_sitename: demo.com
+    wp_install_dir: "/var/www/demo.com"
+    wp_db_name: "datascientest"
+    wp_db_password: "datascientest"
+    wp_db_host: "localhost"
+    wp_db_charset: "utf-8"
+  tasks:
+    - name: Installation de mysql-server
+      apt:
+        pkg: mysql-server
+        update_cache: yes
+        cache_valid_time: 86400
+        state: present
+      when: ansible_distribution == 'Ubuntu'
+
+    - name: Installation de  mariadb-server
+      apt:
+        pkg: mariadb-server
+        update_cache: yes
+        cache_valid_time: 86400
+        state: present
+      when: ansible_distribution == 'Debian'
+
+    - name: Démarrage de MariaDB
+      service:
+        name: mysql
+        state: started
+
+    - name: Installation des dépendences
+      apt:
+        pkg: ["php-mysql", "python3-pymysql"]
+        update_cache: yes
+        cache_valid_time: 86400
+        state: present
+      notify:
+        - restart {{ wp_webserver }}
+
+    - name: Creation de la base de données
+      mysql_db:
+        name: "{{ wp_mysql_db }}"
+        state: present
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+
+    - name: Création de l'utilisateur pour la base de données
+      mysql_user:
+        name: "{{ wp_mysql_user }}"
+        password: "{{ wp_mysql_password }}"
+        priv: "*.*:ALL"
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+
+  handlers:
+    - name: restart nginx
+      service:
+        name: nginx
+        state: restarted

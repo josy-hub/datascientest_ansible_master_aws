@@ -1,0 +1,31 @@
+---
+- name: WordPress | Nginx | Déterminer l'emplacement du socket PHP FPM
+  shell: dpkg -l | grep php-fpm  | awk '{print $3}' | grep -o '[0-9]\.[0-9]' | head -n 1
+  register: "php_ver"
+
+- name: Démarrer le service php{{ php_ver.stdout }}
+  service:
+    name: "php{{ php_ver.stdout }}-fpm"
+    state: started
+
+- name: Démarrer le service nginx
+  service:
+    name: "nginx"
+    state: started
+
+- name: WordPress | Nginx | Copier le fichier de configuration de l'hôte virtuel
+  template:
+    src: "nginx-vhost.j2"
+    dest: "/etc/nginx/sites-available/{{ wp_sitename }}"
+    owner: root
+    group: root
+    mode: 0644
+
+- name: WordPress | Nginx | Fichier de configuration de l'hôte virtuel Symlink des sites disponibles aux sites activés
+  file:
+    state: link
+    src: "/etc/nginx/sites-available/{{ wp_sitename }}"
+    dest: "/etc/nginx/sites-enabled/{{ wp_sitename }}"
+    owner: root
+    group: root
+    mode: 0644

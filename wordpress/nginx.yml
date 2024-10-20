@@ -1,0 +1,48 @@
+- name: nginx
+  hosts: production
+  become: true
+  vars:
+    wp_version: 5.7.1
+    wp_webserver: nginx
+    wp_mysql_db: "datascientest"
+    wp_db_user: "datascientest"
+    wp_mysql_user: "datascientest"
+    wp_mysql_password: "mysql_pass"
+    wp_admin_email: "admin@datascientest.fr"
+    wp_sitename: demo.com
+    wp_install_dir: "/var/www/demo.com"
+    wp_db_name: "datascientest"
+    wp_db_password: "datascientest"
+    wp_db_host: "localhost"
+    wp_db_charset: "utf-8"
+  tasks:
+    - name: WordPress | Nginx | Déterminer l'emplacement du socket PHP FPM
+      shell: dpkg -l | grep php-fpm  | awk '{print $3}' | grep -o '[0-9]\.[0-9]' | head -n 1
+      register: "php_ver"
+
+    - name: demarrage des services php{{ php_ver.stdout }}
+      service:
+        name: "php{{ php_ver.stdout }}-fpm"
+        state: started
+
+    - name: Demarrage des services nginx
+      service:
+        name: "nginx"
+        state: started
+
+    - name: WordPress | Nginx | Copier le fichier de configuration de l'hôte virtuel
+      template:
+        src: "modeles/nginx-vhost.j2"
+        dest: "/etc/nginx/sites-available/{{ wp_sitename }}"
+        owner: root
+        group: root
+        mode: 0644
+
+    - name: WordPress | Nginx | Fichier de configuration de l'hôte virtuel Symlink des sites disponibles aux sites activés
+      file:
+        state: link
+        src: "/etc/nginx/sites-available/{{ wp_sitename }}"
+        dest: "/etc/nginx/sites-enabled/{{ wp_sitename }}"
+        owner: root
+        group: root
+        mode: 0644

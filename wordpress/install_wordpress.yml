@@ -1,0 +1,23 @@
+- name: Installation de wordpress
+  hosts: production
+  become: true
+  vars:
+    wp_version: 5.7.1
+    wp_webserver: nginx
+    wp_mysql_db: "datascientest"
+    wp_db_user: "datascientest"
+    wp_mysql_user: "datascientest"
+    wp_mysql_password: "mysql_pass"
+    wp_admin_email: "admin@datascientest.fr"
+    wp_sitename: demo.com
+    wp_install_dir: "/var/www/demo.com"
+    wp_db_name: "datascientest"
+    wp_db_password: "datascientest"
+    wp_db_host: "localhost"
+    wp_db_charset: "utf-8"
+- name: Installe wordpress
+  import_playbook: wordpress.yml
+- name: mysql
+  import_playbook: mysql.yml
+- name: nginx
+  import_playbook: nginx.yml
