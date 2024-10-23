@@ -1,0 +1,17 @@
+---
+# tasks file for roledatascientest
+- name: Installation de nginx et git avec la dernière version
+  dnf:
+    name: "{{ item }}"
+    state: latest
+  loop:
+    - nginx
+    - git
+
+- name: creation of the file datascientest.conf
+  file:
+    path: /etc/datascientest.conf
+    state: touch
+    mode: u=rw,g=r,o=r
+    access_time: preserve
+    modification_time: preserve
