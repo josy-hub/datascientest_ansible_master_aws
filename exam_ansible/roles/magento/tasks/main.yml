@@ -1,0 +1,212 @@
+---
+# tasks file for magento
+
+- name: Installer PHP et ses extensions
+  apt:
+    name: software-properties-common
+    state: present
+
+- name: Ajouter le PPA pour PHP
+  apt_repository:
+    repo: ppa:ondrej/php
+    state: present
+
+- name: Update Repository and Full-Upgrade Packages
+  apt:
+    update_cache: yes
+#    upgrade: full
+
+- name: Installer les dépendances php{{ php_version }} et composer
+  apt:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - php{{ php_version }}
+    - php{{ php_version }}-mysql
+    - php{{ php_version }}-xml
+    - php{{ php_version }}-mbstring
+    - php{{ php_version }}-curl
+    - php{{ php_version }}-intl
+    - php{{ php_version }}-soap
+    - php{{ php_version }}-zip
+    - php{{ php_version }}-fpm
+    - php{{ php_version }}-bcmath
+    - php{{ php_version }}-dom
+    - php{{ php_version }}-gd
+    - php{{ php_version }}-iconv
+    - php{{ php_version }}-simplexml
+    - php{{ php_version }}-xsl
+    - php{{ php_version }}-cli
+    - php{{ php_version }}-ctype
+    - php{{ php_version }}-fileinfo
+  #  - php{{ php_version }}-filter
+  #  - php{{ php_version }}-hash
+ #   - php{{ php_version }}-json
+#    - php{{ php_version }}-libxml
+ #   - php{{ php_version }}-openssl
+#    - php{{ php_version }}-pcre
+ #   - php{{ php_version }}-pdo_mysql
+    - php{{ php_version }}-sockets
+#    - php{{ php_version }}-sodium
+    - php{{ php_version }}-tokenizer
+    - php{{ php_version }}-xmlwriter
+#    - acl
+#    - php{{ php_version }}-zlib
+#    - php{{ php_version }}-lib-libxml
+
+
+
+- name: Supprimer l'ancien fichier composer s'il existe
+  file:
+    path: /usr/local/bin/composer
+    state: absent
+  ignore_errors: yes
+
+- name: Installer Composer
+  get_url:
+    url: https://getcomposer.org/installer
+#    url: https://getcomposer.org/composer.phar
+    dest: /tmp/composer-setup.php{{ php_version }}
+#    dest: /usr/local/bin/composer.phar
+    mode: 0755
+
+#- name: Composer | Symlink composer.phar
+#  file:
+#    src: composer.phar
+#    dest: /usr/local/bin/composer
+#    state: link
+
+- name: Installer Composer en global
+  command: php{{ php_version }} /tmp/composer-setup.php{{ php_version }} --install-dir=/usr/local/bin --filename=composer
+#  become_user: datascientest
+ # become: yes
+
+#- name: Créer le répertoire /root/.composer s'il n'existe pas
+ #  file:
+ #   path: "/root/.composer"
+  #  state: directory
+   # owner: root
+    #mode: '0600'
+
+- name: Créer le répertoire /datascientest/.composer s'il n'existe pas
+  file:
+    path: "/home/datascientest/.composer"
+    state: directory
+    owner: datascientest
+    mode: '0700'
+
+#- name: Download Composer Installer
+#  get_url:
+#    url: https://getcomposer.org/installer
+#    dest: /tmp/composer-installer
+#    mode: 0755
+
+#- name: Install Composer using php{{ php_version }}
+#  shell: php{{ php_version }} composer-installer
+#  args:
+#    chdir: /tmp/
+
+#- name: Move Composer File to /user/local/bin
+#  shell: mv composer.phar /usr/local/bin/composer
+#  args:
+#    chdir: /tmp/
+
+#- name: Create Symbolic Link
+#  file:
+#    src: /usr/local/bin/composer
+#    dest: /usr/bin/composer
+#    owner: root
+#    group: root
+#    state: link
+
+
+
+- name: Vérifier la version de Composer
+  command: composer --version
+  register: composer_version
+  environment:
+    COMPOSER_HOME: /home/datascientest/.composer
+   # COMPOSER_ALLOW_SUPERUSER: 1
+  become_user: datascientest
+  ignore_errors: yes
+  
+
+- debug:
+    var: composer_version.stdout
+
+
+- name: Set Magento Access Keys for Composer
+  command: composer global config http-basic.repo.magento.com "{{ magento_public_key }}" "{{ magento_private_key }}" 
+  args:
+    warn: false
+  become_user: datascientest
+
+#- name: Create the Magento Open Source Project
+ # command: composer create-project --repository=https://repo.magento.com/ magento/project-community-edition {{ magento_install_dir }}
+  #become_user: datascientest
+
+#- name: Copier le fichier auth.json pour Composer
+#  copy:
+#    src: files/auth.json
+#    dest: "/root/.composer/auth.json"
+#    owner: root
+#    mode: '0600'
+
+- name: Supprimer le répertoire /var/www/magento s'il existe déjà
+  file:
+    path: /var/www/magento
+    state: absent
+
+- name: Créer le répertoire /var/www/magento s'il n'existe pas
+  file:
+    path: "{{ magento_install_dir }}"
+    state: directory
+    mode: '0755'
+
+- name: Configurer les permissions
+  file:
+    path: "{{ magento_install_dir }}"
+    owner: datascientest  # www-data
+    group: datascientest  # www-data
+    mode: '0755'
+    recurse: yes
+
+- name: Installer Magento avec Composer
+  command: composer create-project --repository-url=https://repo.magento.com/ magento/project-community-edition {{ magento_install_dir }}
+  become_user: datascientest
+  environment:
+    COMPOSER_HOME: /home/datascientest/.composer
+  #  COMPOSER_ALLOW_SUPERUSER: 1
+#  args:
+#    chdir: /var/www/magento
+
+#- name: Installer Magento avec Composer
+#  command: composer create-project --repository-url=https://repo.magento.com/ magento/project-community-edition {{ magento_install_dir }} -vvv
+
+#- name: Configurer les permissions
+#  file:
+#    path: "{{ magento_install_dir }}"
+#    owner: www-data
+#    group: www-data
+#    mode: '0755'
+#    recurse: yes
+
+- name: Installer Magento avec les paramètres par défaut
+  command: >
+    bin/magento setup:install
+    --base-url={{ magento_base_url }}
+    --db-host={{ magento_db_host }}
+    --db-name={{ magento_db_name }}
+    --db-user={{ magento_db_user }}
+    --db-password={{ magento_db_password }}
+    --admin-firstname={{ magento_admin_firstname }}
+    --admin-lastname={{ magento_admin_lastname }}
+    --admin-email={{ magento_admin_email }}
+    --admin-user={{ magento_admin_user }}
+    --admin-password={{ magento_admin_password }}
+    --backend-frontname={{ magento_backend_frontname }}
+    --search-engine={{ search_engine }}
+    --elasticsearch-host={{ elasticsearch_host }}
+    --elasticsearch-port={{ elasticsearch_port }}
+  args:
+    chdir: "{{ magento_chdir }}"

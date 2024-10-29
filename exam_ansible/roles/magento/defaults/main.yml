@@ -1,0 +1,22 @@
+---
+# defaults file for magento
+
+magento_base_url: "{{ magento_base_url }}"
+magento_db_host: "{{ magento_db_host }}"
+magento_db_name: "{{ magento_db_name }}"
+magento_db_user: "{{ magento_db_user }}"
+magento_db_password: "{{ magento_db_password }}"
+magento_admin_firstname: "{{ magento_admin_firstname }}"
+magento_admin_lastname: "{{ magento_admin_lastname }}"
+magento_admin_email: "{{ magento_admin_email }}"
+magento_admin_user: "{{ magento_admin_user }}"
+magento_admin_password: "{{ magento_admin_password }}"
+magento_backend_frontname: "{{ magento_backend_frontname }}"
+magento_chdir: "{{ magento_chdir }}"
+magento_install_dir: "/var/www/magento"
+magento_public_key: "7ae615bea011363fff7d1148da0f125c"
+magento_private_key: "366fc1dbd5eb2a272df841e2ddea2d6a"
+php_version: "{{ php_version }}"
+search_engine: "{{ search_engine }}"
+elasticsearch_host: "{{ elasticsearch_host }}"
+elasticsearch_port: "{{ elasticsearch_port }}"

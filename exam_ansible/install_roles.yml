@@ -1,0 +1,23 @@
+- hosts: production
+  become: true
+  vars:
+    magento_base_url: "http://ec2-15-237-188-224.eu-west-3.compute.amazonaws.com"
+    magento_db_host: "localhost"
+    magento_db_name: "magento_db"
+    magento_db_user: "magento_user"
+    magento_db_password: "password"
+    magento_admin_firstname: "Admin"
+    magento_admin_lastname: "User"
+    magento_admin_email: "admin@admin.com"
+    magento_admin_user: "admin"
+    magento_admin_password: "admin123"
+    magento_backend_frontname: "admin"
+    magento_chdir: "/var/www/magento"
+    php_version: "8.3"
+    search_engine: "elasticsearch7"
+    elasticsearch_host: "localhost"
+    elasticsearch_port: "9200"
+
+  roles:
+    - mysql
+    - magento
