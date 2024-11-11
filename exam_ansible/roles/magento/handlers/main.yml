@@ -1,2 +1,11 @@
 ---
 # handlers file for magento
+- name: Redémarrage Elasticsearch
+  service:
+    name: elasticsearch
+    state: restarted
+
+#- name: Restart PHP-FPM
+#  service:
+#    name: php-fpm
+ #   state: restarted

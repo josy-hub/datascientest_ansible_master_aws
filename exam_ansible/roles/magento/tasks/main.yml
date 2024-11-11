@@ -39,30 +39,20 @@
     - php{{ php_version }}-cli
     - php{{ php_version }}-ctype
     - php{{ php_version }}-fileinfo
-  #  - php{{ php_version }}-filter
-  #  - php{{ php_version }}-hash
- #   - php{{ php_version }}-json
-#    - php{{ php_version }}-libxml
- #   - php{{ php_version }}-openssl
-#    - php{{ php_version }}-pcre
- #   - php{{ php_version }}-pdo_mysql
     - php{{ php_version }}-sockets
-#    - php{{ php_version }}-sodium
     - php{{ php_version }}-tokenizer
     - php{{ php_version }}-xmlwriter
-#    - acl
-#    - php{{ php_version }}-zlib
-#    - php{{ php_version }}-lib-libxml
+    - acl
+    - unzip
 
 
-
-- name: Supprimer l'ancien fichier composer s'il existe
+- name: Suppression de l'ancien fichier composer s'il existe
   file:
     path: /usr/local/bin/composer
     state: absent
   ignore_errors: yes
 
-- name: Installer Composer
+- name: Téléchargement de Composer
   get_url:
     url: https://getcomposer.org/installer
 #    url: https://getcomposer.org/composer.phar
@@ -76,10 +66,8 @@
 #    dest: /usr/local/bin/composer
 #    state: link
 
-- name: Installer Composer en global
+- name: Installation de Composer en global
   command: php{{ php_version }} /tmp/composer-setup.php{{ php_version }} --install-dir=/usr/local/bin --filename=composer
-#  become_user: datascientest
- # become: yes
 
 #- name: Créer le répertoire /root/.composer s'il n'existe pas
  #  file:
@@ -87,14 +75,14 @@
   #  state: directory
    # owner: root
     #mode: '0600'
-
-- name: Créer le répertoire /datascientest/.composer s'il n'existe pas
-  file:
-    path: "/home/datascientest/.composer"
-    state: directory
-    owner: datascientest
-    mode: '0700'
-
+########################## le bonnnnnn
+#- name: Créer le répertoire /datascientest/.composer s'il n'existe pas
+ # file:
+  #  path: "/home/datascientest/.composer"
+   # state: directory
+   # owner: datascientest
+    #mode: '0700'
+####################
 #- name: Download Composer Installer
 #  get_url:
 #    url: https://getcomposer.org/installer
@@ -118,14 +106,14 @@
 #    owner: root
 #    group: root
 #    state: link
+#########################################
 
 
-
-- name: Vérifier la version de Composer
+- name: Vérification de la version de Composer
   command: composer --version
   register: composer_version
-  environment:
-    COMPOSER_HOME: /home/datascientest/.composer
+  #environment:
+   # COMPOSER_HOME: /home/datascientest/.composer
    # COMPOSER_ALLOW_SUPERUSER: 1
   become_user: datascientest
   ignore_errors: yes
@@ -134,6 +122,42 @@
 - debug:
     var: composer_version.stdout
 
+- name: Clear Composer cache
+  command: composer clear-cache
+  become_user: datascientest
+  args:
+    chdir: "{{ magento_install_dir }}"
+
+- name: Ajout de la clé GPG ElasticSearch
+  ansible.builtin.apt_key:
+    url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+    state: present
+
+- name: Ajout du dépôt Elasticsearch
+  apt_repository:
+    repo: "deb https://artifacts.elastic.co/packages/7.x/apt stable main"
+    state: present
+    filename: "elasticsearch"
+    update_cache: yes
+
+- name: Installation d'Elasticsearch
+  apt:
+    name: elasticsearch
+    state: present
+
+#- name: activation du démarrage du service Elasticsearch au démarrage
+#  systemd:
+#    name: elasticsearch
+#    enabled: yes
+#    state: started
+
+- name: Configuration d'Elasticsearch pour écouter sur localhost
+  lineinfile:
+    path: /etc/elasticsearch/elasticsearch.yml
+    regexp: '^network.host:'
+    line: 'network.host: localhost'
+    state: present
+  notify: Redémarrage Elasticsearch
 
 - name: Set Magento Access Keys for Composer
   command: composer global config http-basic.repo.magento.com "{{ magento_public_key }}" "{{ magento_private_key }}" 
@@ -152,33 +176,36 @@
 #    owner: root
 #    mode: '0600'
 
-- name: Supprimer le répertoire /var/www/magento s'il existe déjà
+- name: Suppression du répertoire /var/www/magento s'il existe déjà
   file:
     path: /var/www/magento
     state: absent
 
-- name: Créer le répertoire /var/www/magento s'il n'existe pas
+- name: Création du répertoire /var/www/magento s'il n'existe pas
   file:
     path: "{{ magento_install_dir }}"
     state: directory
     mode: '0755'
 
-- name: Configurer les permissions
+- name: Configuration des permissions
   file:
     path: "{{ magento_install_dir }}"
-    owner: datascientest  # www-data
+    owner: datascientest # www-data
     group: datascientest  # www-data
     mode: '0755'
     recurse: yes
 
-- name: Installer Magento avec Composer
-  command: composer create-project --repository-url=https://repo.magento.com/ magento/project-community-edition {{ magento_install_dir }}
+- name: Installation de Magento avec Composer
+  shell: composer -vvv create-project --repository-url=https://repo.magento.com/ magento/project-community-edition {{ magento_install_dir }} --prefer-dist --no-interaction
   become_user: datascientest
   environment:
-    COMPOSER_HOME: /home/datascientest/.composer
-  #  COMPOSER_ALLOW_SUPERUSER: 1
-#  args:
-#    chdir: /var/www/magento
+    COMPOSER_PROCESS_TIMEOUT: 2000
+    COMPOSER_MEMORY_LIMIT: -1 
+ # environment:
+  #  COMPOSER_HOME: /home/datascientest/.composer
+   # COMPOSER_ALLOW_SUPERUSER: 1
+ # args:
+ #   chdir: /var/www/magento
 
 #- name: Installer Magento avec Composer
 #  command: composer create-project --repository-url=https://repo.magento.com/ magento/project-community-edition {{ magento_install_dir }} -vvv
@@ -191,7 +218,7 @@
 #    mode: '0755'
 #    recurse: yes
 
-- name: Installer Magento avec les paramètres par défaut
+- name: Installation de Magento avec les paramètres par défaut
   command: >
     bin/magento setup:install
     --base-url={{ magento_base_url }}
