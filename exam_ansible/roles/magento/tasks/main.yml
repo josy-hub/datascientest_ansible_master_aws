@@ -151,19 +151,74 @@
 #    enabled: yes
 #    state: started
 
+- name: Créer un fichier swap de 1 Go
+  command: fallocate -l 1G /swapfile
+  args:
+    creates: /swapfile
+
+- name: Appliquer les permissions appropriées au fichier swap
+  file:
+    path: /swapfile
+    mode: '0600'
+
+- name: Configurer le fichier swap
+  command: mkswap /swapfile
+  when: ansible_swaptotal_mb == 0
+
+- name: Activer le swap
+  command: swapon /swapfile
+  when: ansible_swaptotal_mb == 0
+
+- name: Ajouter le fichier swap à fstab pour un montage persistant
+  lineinfile:
+    path: /etc/fstab
+    line: '/swapfile none swap sw 0 0'
+    state: present
+    create: yes
+
 - name: Configuration d'Elasticsearch pour écouter sur localhost
   lineinfile:
     path: /etc/elasticsearch/elasticsearch.yml
     regexp: '^network.host:'
-    line: 'network.host: localhost'
+    line: 'network.host: 0.0.0.0'
     state: present
   notify: Redémarrage Elasticsearch
+
+- name: activation du démarrage du service Elasticsearch au démarrage
+  systemd:
+    name: elasticsearch
+    enabled: yes
+    state: started
 
 - name: Set Magento Access Keys for Composer
   command: composer global config http-basic.repo.magento.com "{{ magento_public_key }}" "{{ magento_private_key }}" 
   args:
     warn: false
   become_user: datascientest
+
+- name: Réduire l'allocation de mémoire pour Elasticsearch à 512 Mo
+  lineinfile:
+    path: /etc/elasticsearch/jvm.options
+    regexp: '^-Xms'
+    line: '-Xms512m'
+    state: present
+  notify: Redémarrage Elasticsearch
+
+- name: Configurer la limite supérieure de mémoire pour Elasticsearch
+  lineinfile:
+    path: /etc/elasticsearch/jvm.options
+    regexp: '^-Xmx'
+    line: '-Xmx512m'
+    state: present
+  notify: Redémarrage Elasticsearch
+
+- name: Configurer Elasticsearch pour un mode nœud unique
+  lineinfile:
+    path: /etc/elasticsearch/elasticsearch.yml
+    regexp: '^discovery.type:'
+    line: 'discovery.type: single-node'
+    state: present
+  notify: Redémarrage Elasticsearch
 
 #- name: Create the Magento Open Source Project
  # command: composer create-project --repository=https://repo.magento.com/ magento/project-community-edition {{ magento_install_dir }}
