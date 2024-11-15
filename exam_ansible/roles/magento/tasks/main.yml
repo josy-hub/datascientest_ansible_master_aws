@@ -292,3 +292,6 @@
     --elasticsearch-port={{ elasticsearch_port }}
   args:
     chdir: "{{ magento_chdir }}"
+
+- include_tasks: nginx.yml
+  when: magento_webserver == "nginx"
