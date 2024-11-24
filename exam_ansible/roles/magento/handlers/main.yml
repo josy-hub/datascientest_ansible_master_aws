@@ -5,6 +5,11 @@
     name: elasticsearch
     state: restarted
 
+- name: Redémarrage Nginx
+  service:
+    name: nginx
+    state: restarted
+
 #- name: Restart PHP-FPM
 #  service:
 #    name: php-fpm

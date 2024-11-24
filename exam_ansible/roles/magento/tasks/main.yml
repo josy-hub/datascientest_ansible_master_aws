@@ -14,7 +14,6 @@
 - name: Update Repository and Full-Upgrade Packages
   apt:
     update_cache: yes
-#    upgrade: full
 
 - name: Installer les dépendances php{{ php_version }} et composer
   apt:
@@ -55,66 +54,15 @@
 - name: Téléchargement de Composer
   get_url:
     url: https://getcomposer.org/installer
-#    url: https://getcomposer.org/composer.phar
     dest: /tmp/composer-setup.php{{ php_version }}
-#    dest: /usr/local/bin/composer.phar
     mode: 0755
-
-#- name: Composer | Symlink composer.phar
-#  file:
-#    src: composer.phar
-#    dest: /usr/local/bin/composer
-#    state: link
 
 - name: Installation de Composer en global
   command: php{{ php_version }} /tmp/composer-setup.php{{ php_version }} --install-dir=/usr/local/bin --filename=composer
 
-#- name: Créer le répertoire /root/.composer s'il n'existe pas
- #  file:
- #   path: "/root/.composer"
-  #  state: directory
-   # owner: root
-    #mode: '0600'
-########################## le bonnnnnn
-#- name: Créer le répertoire /datascientest/.composer s'il n'existe pas
- # file:
-  #  path: "/home/datascientest/.composer"
-   # state: directory
-   # owner: datascientest
-    #mode: '0700'
-####################
-#- name: Download Composer Installer
-#  get_url:
-#    url: https://getcomposer.org/installer
-#    dest: /tmp/composer-installer
-#    mode: 0755
-
-#- name: Install Composer using php{{ php_version }}
-#  shell: php{{ php_version }} composer-installer
-#  args:
-#    chdir: /tmp/
-
-#- name: Move Composer File to /user/local/bin
-#  shell: mv composer.phar /usr/local/bin/composer
-#  args:
-#    chdir: /tmp/
-
-#- name: Create Symbolic Link
-#  file:
-#    src: /usr/local/bin/composer
-#    dest: /usr/bin/composer
-#    owner: root
-#    group: root
-#    state: link
-#########################################
-
-
 - name: Vérification de la version de Composer
   command: composer --version
   register: composer_version
-  #environment:
-   # COMPOSER_HOME: /home/datascientest/.composer
-   # COMPOSER_ALLOW_SUPERUSER: 1
   become_user: datascientest
   ignore_errors: yes
   
@@ -144,12 +92,6 @@
   apt:
     name: elasticsearch
     state: present
-
-#- name: activation du démarrage du service Elasticsearch au démarrage
-#  systemd:
-#    name: elasticsearch
-#    enabled: yes
-#    state: started
 
 - name: Créer un fichier swap de 1 Go
   command: fallocate -l 1G /swapfile
@@ -190,12 +132,6 @@
     enabled: yes
     state: started
 
-- name: Set Magento Access Keys for Composer
-  command: composer global config http-basic.repo.magento.com "{{ magento_public_key }}" "{{ magento_private_key }}" 
-  args:
-    warn: false
-  become_user: datascientest
-
 - name: Réduire l'allocation de mémoire pour Elasticsearch à 512 Mo
   lineinfile:
     path: /etc/elasticsearch/jvm.options
@@ -220,17 +156,6 @@
     state: present
   notify: Redémarrage Elasticsearch
 
-#- name: Create the Magento Open Source Project
- # command: composer create-project --repository=https://repo.magento.com/ magento/project-community-edition {{ magento_install_dir }}
-  #become_user: datascientest
-
-#- name: Copier le fichier auth.json pour Composer
-#  copy:
-#    src: files/auth.json
-#    dest: "/root/.composer/auth.json"
-#    owner: root
-#    mode: '0600'
-
 - name: Suppression du répertoire /var/www/magento s'il existe déjà
   file:
     path: /var/www/magento
@@ -240,43 +165,35 @@
   file:
     path: "{{ magento_install_dir }}"
     state: directory
-    mode: '0755'
+    mode: '0775'
 
 - name: Configuration des permissions
   file:
     path: "{{ magento_install_dir }}"
-    owner: datascientest # www-data
-    group: datascientest  # www-data
-    mode: '0755'
+    owner: datascientest
+    group: datascientest
+    mode: '0775'
     recurse: yes
+
+- name: Set Magento Access Keys for Composer
+  command: composer global config http-basic.repo.magento.com "{{ magento_public_key }}" "{{ magento_private_key }}" 
+  args:
+    warn: false
+  become_user: datascientest
 
 - name: Installation de Magento avec Composer
   shell: composer -vvv create-project --repository-url=https://repo.magento.com/ magento/project-community-edition {{ magento_install_dir }} --prefer-dist --no-interaction
   become_user: datascientest
   environment:
     COMPOSER_PROCESS_TIMEOUT: 2000
-    COMPOSER_MEMORY_LIMIT: -1 
- # environment:
+    COMPOSER_MEMORY_LIMIT: -1
   #  COMPOSER_HOME: /home/datascientest/.composer
    # COMPOSER_ALLOW_SUPERUSER: 1
- # args:
- #   chdir: /var/www/magento
-
-#- name: Installer Magento avec Composer
-#  command: composer create-project --repository-url=https://repo.magento.com/ magento/project-community-edition {{ magento_install_dir }} -vvv
-
-#- name: Configurer les permissions
-#  file:
-#    path: "{{ magento_install_dir }}"
-#    owner: www-data
-#    group: www-data
-#    mode: '0755'
-#    recurse: yes
 
 - name: Installation de Magento avec les paramètres par défaut
   command: >
     bin/magento setup:install
-    --base-url={{ magento_base_url }}
+    --base-url="http://{{ magento_base_url }}"
     --db-host={{ magento_db_host }}
     --db-name={{ magento_db_name }}
     --db-user={{ magento_db_user }}
@@ -290,6 +207,7 @@
     --search-engine={{ search_engine }}
     --elasticsearch-host={{ elasticsearch_host }}
     --elasticsearch-port={{ elasticsearch_port }}
+  become_user: datascientest
   args:
     chdir: "{{ magento_chdir }}"
 
