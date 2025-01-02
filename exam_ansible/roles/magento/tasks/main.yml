@@ -70,11 +70,11 @@
 - debug:
     var: composer_version.stdout
 
-- name: Clear Composer cache
-  command: composer clear-cache
-  become_user: datascientest
-  args:
-    chdir: "{{ magento_install_dir }}"
+#- name: Clear Composer cache
+#  command: composer clear-cache
+#  become_user: datascientest
+#  args:
+#    chdir: "{{ magento_install_dir }}"
 
 - name: Ajout de la clé GPG ElasticSearch
   ansible.builtin.apt_key:
@@ -167,11 +167,25 @@
     state: directory
     mode: '0775'
 
+- name: Configurer le groupe Magento
+  group:
+    name: magento
+    state: present
+
+- name: Ajouter www-data et datascientest au groupe Magento
+  user:
+    name: "{{ item }}"
+    groups: magento
+    append: yes
+  loop:
+    - www-data
+    - datascientest
+
 - name: Configuration des permissions
   file:
     path: "{{ magento_install_dir }}"
     owner: datascientest
-    group: datascientest
+    group: magento
     mode: '0775'
     recurse: yes
 
@@ -180,6 +194,9 @@
   args:
     warn: false
   become_user: datascientest
+
+- name: Activer le bit setgid pour les répertoires
+  shell: find {{ magento_install_dir }} -type d -exec chmod g+s {} \;
 
 - name: Installation de Magento avec Composer
   shell: composer -vvv create-project --repository-url=https://repo.magento.com/ magento/project-community-edition {{ magento_install_dir }} --prefer-dist --no-interaction
@@ -210,6 +227,17 @@
   become_user: datascientest
   args:
     chdir: "{{ magento_chdir }}"
+
+- name: Renommer le fichier local.xml.sample en local.xml
+  copy:
+    src: /var/www/magento/pub/errors/local.xml.sample
+    dest: /var/www/magento/pub/errors/local.xml
+    remote_src: yes
+  notify:
+    - Supprimer l'ancien fichier local.xml.sample
+
+- name: Vérifier les permissions des fichiers critiques
+  shell: chmod -R g+rw {{ magento_install_dir }}/var {{ magento_install_dir }}/pub {{ magento_install_dir }}/app/etc
 
 - include_tasks: nginx.yml
   when: magento_webserver == "nginx"

@@ -10,6 +10,11 @@
     name: nginx
     state: restarted
 
+- name: Supprimer l'ancien fichier local.xml.sample
+  file:
+    path: /var/www/magento/pub/errors/local.xml.sample
+    state: absent
+
 #- name: Restart PHP-FPM
 #  service:
 #    name: php-fpm

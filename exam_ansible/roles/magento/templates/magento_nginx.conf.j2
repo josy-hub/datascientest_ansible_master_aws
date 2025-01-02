@@ -1,0 +1,53 @@
+server {
+    listen 80;
+    server_name {{ magento_base_url }};
+    set $MAGE_ROOT {{ magento_chdir }}/pub;
+    set $MAGE_MODE production;
+
+    access_log /var/log/nginx/magento-access.log;
+    error_log /var/log/nginx/magento-error.log;
+
+    root $MAGE_ROOT;
+    index index.php index.html;
+
+    location / {
+        try_files $uri $uri/ /index.php$is_args$args;
+    }
+
+    location ~* \.(ico|css|js|gif|jpe?g|png|svg|webp|woff|woff2)$ {
+        expires max;
+        log_not_found off;
+    }
+
+    location ~* \.(html|json)$ {
+        expires -1;
+    }
+
+    location ~ [^/]\.php(/|$) {
+        fastcgi_pass unix:/var/run/php/php{{ php_version }}-fpm.sock;
+        fastcgi_param SCRIPT_FILENAME $MAGE_ROOT$fastcgi_script_name;
+        include fastcgi_params;
+        fastcgi_index index.php;
+        
+        fastcgi_buffers 16 16k;
+        fastcgi_buffer_size 32k;
+        fastcgi_busy_buffers_size 64k;
+        fastcgi_temp_file_write_size 64k;
+    }
+
+    location ~* ^/media/ {
+        root $MAGE_ROOT/pub;
+        try_files $uri $uri/ /index.php$is_args$args;
+    }
+
+    location ~* ^/static/ {
+        root $MAGE_ROOT/pub;
+        try_files /static/$mage_mode/$1 /static/$1 @static;
+        expires max;
+        log_not_found off;
+    }
+    location ~ /\.ht {
+        deny all;
+    }
+
+}
