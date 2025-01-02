@@ -70,12 +70,6 @@
 - debug:
     var: composer_version.stdout
 
-#- name: Clear Composer cache
-#  command: composer clear-cache
-#  become_user: datascientest
-#  args:
-#    chdir: "{{ magento_install_dir }}"
-
 - name: Ajout de la clé GPG ElasticSearch
   ansible.builtin.apt_key:
     url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
@@ -204,8 +198,6 @@
   environment:
     COMPOSER_PROCESS_TIMEOUT: 2000
     COMPOSER_MEMORY_LIMIT: -1
-  #  COMPOSER_HOME: /home/datascientest/.composer
-   # COMPOSER_ALLOW_SUPERUSER: 1
 
 - name: Installation de Magento avec les paramètres par défaut
   command: >
