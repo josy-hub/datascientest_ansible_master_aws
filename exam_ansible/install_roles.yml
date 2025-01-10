@@ -1,7 +1,7 @@
 - hosts: production
   become: true
   vars:
-    magento_base_url: "ec2-13-38-73-15.eu-west-3.compute.amazonaws.com"
+    magento_base_url: "ec2-13-38-14-117.eu-west-3.compute.amazonaws.com"
     magento_db_host: "localhost"
     magento_db_name: "magento_db"
     magento_db_user: "magento_user"

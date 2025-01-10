@@ -2,6 +2,10 @@
 - name: Converge
   hosts: all
   tasks:
-    - name: "Include magento"
+    - name: "Include MySQL"
+      include_role:
+        name: "mysql"
+
+    - name: "Include Magento"
       include_role:
         name: "magento"
