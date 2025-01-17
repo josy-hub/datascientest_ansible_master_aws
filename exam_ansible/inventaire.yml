@@ -1,3 +1,7 @@
 production:
   hosts:
-    serveurweb1.datascientest.fr:
+    magento.datascientest.fr:
+
+test:
+  hosts:
+    test.datascientest.fr:

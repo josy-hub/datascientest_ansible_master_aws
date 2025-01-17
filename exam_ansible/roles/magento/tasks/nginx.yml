@@ -2,16 +2,22 @@
 #- name: Magento | Nginx | Déterminer l'emplacement du socket PHP FPM
 #  shell: dpkg -l | grep php-fpm  | awk '{print $3}' | grep -o '[0-9]\.[0-9]' | head -n 1
 #  register: "php_version"
+- name: Installation de  nginx
+  apt:
+    name: "nginx"
+    state: present
 
 - name: Démarrer le service php{{ php_version }}
   service:
     name: "php{{ php_version }}-fpm"
     state: started
 
-- name: Démarrer le service nginx
-  service:
-    name: "nginx"
-    state: started
+- name: S'assurer qu'Apache2 est arrêté et désactivé
+  ansible.builtin.systemd:
+    name: apache2
+    state: stopped
+    enabled: no
+  ignore_errors: yes
 
 - name: Magento | Nginx | Copier le fichier de configuration de l'hôte virtuel
   template:
@@ -21,16 +27,30 @@
     group: root
     mode: 0644
     force: yes
-  notify: Redémarrage Nginx
+ # notify: Redémarrage Nginx
 
-- name: Augmenter la taille du server_names_hash_bucket_size pour Nginx
+- name: Mettre à jour server_names_hash_bucket_size dans nginx.conf
   lineinfile:
     path: /etc/nginx/nginx.conf
-    regexp: '^(\s*server_names_hash_bucket_size\s+)(\d+);'
-    line: 'server_names_hash_bucket_size 128;'
-    create: yes
+    regexp: '^#? *server_names_hash_bucket_size'
+    line: '        server_names_hash_bucket_size 128;'
+    state: present
     backup: yes
+   ##insertafter: '^\\s*##\\s*# Basic Settings'
+    insertafter: '^http\s*{'
   notify: Redémarrage Nginx
+
+########
+
+#- name: Configurer server_names_hash_bucket_size dans nginx.conf après http {
+#  blockinfile:
+#    path: /etc/nginx/nginx.conf
+#    marker: "# {mark}"
+#    insertafter: '^http\s*{'
+#    block: |
+#      server_names_hash_bucket_size 128;
+ ## notify: Redémarrage Nginx
+
 
 - name: Magento | Nginx | Fichier de configuration de l'hôte virtuel Symlink des sites disponibles aux sites activés
   file:
