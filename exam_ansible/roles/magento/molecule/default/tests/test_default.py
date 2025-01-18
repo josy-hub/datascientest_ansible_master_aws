@@ -10,7 +10,7 @@ def test_services_running(host):
     assert mysql.is_running
 
 def test_magento_homepage(host):
-    response = requests.get("http://ec2-15-237-121-222.eu-west-3.compute.amazonaws.com")
+    response = requests.get("http://ec2-13-38-105-132.eu-west-3.compute.amazonaws.com")
     assert response.status_code == 200, "La page d'accueil Magento ne répond pas correctement"
 
 

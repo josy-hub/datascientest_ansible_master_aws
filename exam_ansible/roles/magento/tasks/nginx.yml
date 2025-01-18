@@ -32,25 +32,19 @@
 - name: Mettre à jour server_names_hash_bucket_size dans nginx.conf
   lineinfile:
     path: /etc/nginx/nginx.conf
-    regexp: '^#? *server_names_hash_bucket_size'
+    regexp: '^(\s#? *server_names_hash_bucket_size)'
     line: '        server_names_hash_bucket_size 128;'
     state: present
-    backup: yes
-   ##insertafter: '^\\s*##\\s*# Basic Settings'
-    insertafter: '^http\s*{'
+#    backup: yes
+#    insertafter: '^http\s*{'
   notify: Redémarrage Nginx
 
-########
-
-#- name: Configurer server_names_hash_bucket_size dans nginx.conf après http {
-#  blockinfile:
-#    path: /etc/nginx/nginx.conf
-#    marker: "# {mark}"
-#    insertafter: '^http\s*{'
-#    block: |
-#      server_names_hash_bucket_size 128;
- ## notify: Redémarrage Nginx
-
+- name: Mettre à jour nginx.conf pour pointer sur magento
+  lineinfile:
+    path: /etc/nginx/nginx.conf
+    regexp: '^(\s*include\s+/etc/nginx/sites-enabled/\*;)'
+    line: '        include /etc/nginx/sites-enabled/magento;'
+    state: present
 
 - name: Magento | Nginx | Fichier de configuration de l'hôte virtuel Symlink des sites disponibles aux sites activés
   file:
