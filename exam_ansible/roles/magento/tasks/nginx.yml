@@ -1,7 +1,4 @@
 ---
-#- name: Magento | Nginx | Déterminer l'emplacement du socket PHP FPM
-#  shell: dpkg -l | grep php-fpm  | awk '{print $3}' | grep -o '[0-9]\.[0-9]' | head -n 1
-#  register: "php_version"
 - name: Installation de  nginx
   apt:
     name: "nginx"
@@ -35,8 +32,6 @@
     regexp: '^(\s#? *server_names_hash_bucket_size)'
     line: '        server_names_hash_bucket_size 128;'
     state: present
-#    backup: yes
-#    insertafter: '^http\s*{'
   notify: Redémarrage Nginx
 
 - name: Mettre à jour nginx.conf pour pointer sur magento

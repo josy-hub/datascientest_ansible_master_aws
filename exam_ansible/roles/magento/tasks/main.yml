@@ -115,7 +115,6 @@
 - name: Configuration d'Elasticsearch pour écouter sur localhost
   lineinfile:
     path: /etc/elasticsearch/elasticsearch.yml
-    #regexp: '^#network.host:'
     regexp: '^#? *network.host:'
     line: 'network.host: 0.0.0.0'
     state: present
@@ -146,7 +145,6 @@
 - name: Configurer Elasticsearch pour un mode nœud unique
   lineinfile:
     path: /etc/elasticsearch/elasticsearch.yml
-#    regexp: '^#discovery.seed_hosts:'
     regexp: '^#? *discovery.seed_hosts:'
     line: 'discovery.seed_hosts: ["127.0.0.1"]'
     state: present
